@@ -5,11 +5,12 @@ from flask import Flask, request, session, g, redirect, url_for, \
 from contextlib import closing
 from operator import itemgetter
 from datetime import datetime
+import os
 
 from math_ import update_rating
 
 # configuration
-DATABASE = '/home/johan/EloRating/db/EloRating.db'
+DATABASE = os.path.join(os.path.expanduser('~'), 'FoosballLadder/db/Ladder.db')
 DEBUG = True
 SECRET_KEY = 'development key'
 USERNAME = 'admin'
@@ -162,5 +163,5 @@ def logout():
     return redirect(url_for('main_page'))
 
 if __name__ == '__main__':
-    #init_db()
+    #init_db()  # NOTE Needs to be used first time. Initializes and resets db
     app.run(debug=True)
