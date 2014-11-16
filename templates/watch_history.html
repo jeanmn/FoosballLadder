@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block body %}
+    <div class=metanav>
+      <ul class=entries>
+      {% for entry in entries %}
+        <li><h2>{{ entry.name }}</h2>{{ entry.points|safe }}
+      {% else %}
+        <li><em>Main page.  No entries here so far</em>
+      {% endfor %}
+      </ul>
+    </div>
+  <ul class=entries>
+  {% for entry in entries %}
+  <li>{{ entry.winner }} - {{entry.loser}} : 
+    {{entry.winner_res}} - {{entry.loser_res}}
+  </li>
+  {% else %}
+    <li><em>History empty.</em>
+  {% endfor %}
+  </ul>
+{% endblock %}

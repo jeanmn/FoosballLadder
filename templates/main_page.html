@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block body %}
+  {% if session.logged_in %}
+    <div class=metanav>
+      <form action="{{ url_for('add_score') }}" method=post class=add-entry>
+        <dl>
+          <dt>Winner:
+          <dd><input type=text size=30 name=winner>
+          <dt>Your goals (loser):
+          <dd><input type=text size=30 name=loser_res>
+          <dt>Winner goals:
+          <dd><input type=text size=30 name=winner_res>
+          <dd><input type=submit value=Share>
+        </dl>
+      </form>
+    </div>
+  {% endif %}
+  <ul class=entries>
+  {% for entry in entries %}
+    <li><h2>{{ entry.name }}</h2>{{ entry.points|safe }}
+  {% else %}
+    <li><em>Main page.  No entries here so far</em>
+  {% endfor %}
+  </ul>
+{% endblock %}

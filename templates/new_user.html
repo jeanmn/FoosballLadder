@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h2>New Player</h2>
+  {% if error %}<p class=error><strong>Error:</strong> {{ error }} LOLz{% endif %}
+  <form action="{{ url_for('newuser') }}" method=post>
+    <dl>
+      <dt>Username:
+      <dd><input type=text name=username>
+      <dt>Password (don't use your real one!):
+      <dd><input type=password name=password>
+      <dt>Password again:
+      <dd><input type=password name=password_again>
+      <dd><input type=submit value=NewUser>
+    </dl>
+  </form>
+{% endblock %}
