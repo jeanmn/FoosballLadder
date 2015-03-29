@@ -48,8 +48,10 @@ def teardown_request(exception):
 
 @app.route('/')
 def main_page():
-    cur = g.db.execute('select name, points from entries order by points desc')
+    cur = g.db.cursor()
+    cur.execute('select name, points from entries order by points desc')
     entries = [dict(name=row[0], points=row[1]) for row in cur.fetchall()]
+    cur.close()
     return render_template('main_page.html', entries=entries)
 
 
@@ -68,7 +70,8 @@ def add_score():
         flash('Incorrect entry!')
         return redirect(url_for('main_page'))
 
-    cur = g.db.execute(
+    cur = g.db.cursor()
+    cur.execute(
         'select points, K, n_games from entries where name in ("{}", "{}")'.format(loser, winner)
     )
     (loser_points_before, loser_K, loser_n_games), (winner_points_before, winner_K, winner_n_games) = cur.fetchall()
@@ -80,37 +83,41 @@ def add_score():
         winner_res, loser_res
     )
 
-    g.db.execute(
-        'update entries set points=(?) where name="{}"'.format(winner),
-        [new_winner_rating]
+    cur.execute(
+        'update entries set points=(%s) where name="{}"'.format(winner),
+        (new_winner_rating,)
     )
-    g.db.execute(
-        'update entries set n_games=(?) where name="{}"'.format(winner),
-        [winner_n_games + 1]
+    cur.execute(
+        'update entries set n_games=(%s) where name="{}"'.format(winner),
+        (winner_n_games + 1,)
     )
-    g.db.execute(
-        'update entries set points=(?) where name="{}"'.format(loser),
-        [new_loser_rating]
+    cur.execute(
+        'update entries set points=(%s) where name="{}"'.format(loser),
+        (new_loser_rating,)
     )
-    g.db.execute(
-        'update entries set n_games=(?) where name="{}"'.format(loser),
-        [loser_n_games + 1]
+    cur.execute(
+        'update entries set n_games=(%s) where name="{}"'.format(loser),
+        (loser_n_games + 1,)
     )
-    g.db.execute(
-        'insert into results (winner, loser, winner_points_before, loser_points_before, winner_res, loser_res, date_) values (?, ?, ?, ?, ?, ?, ?)',
-        [winner, loser, winner_points_before, loser_points_before, winner_res, loser_res, datetime.now().date()])
+    cur.execute(
+        'insert into results (winner, loser, winner_points_before, loser_points_before, winner_res, loser_res, date_) values (%s, %s, %s, %s, %s, %s, %s)',
+        (winner, loser, winner_points_before, loser_points_before, winner_res, loser_res, datetime.now().date())
+    )
 
     g.db.commit()
+    cur.close()
     flash('New entry was successfully posted')
     return redirect(url_for('main_page'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
-    cur = g.db.execute(
+    cur = g.db.cursor()
+    cur.execute(
         'select name, password from entries'
     )
     user_pws = {un: pw for (un, pw) in cur.fetchall()}
+    cur.close()
     if request.method == 'POST':
         given_username = request.form['username']
         if given_username not in user_pws.keys():
@@ -136,11 +143,14 @@ def newuser():
         elif (username.encode('ascii', 'ignore') != username) or (pw.encode('ascii', 'ignore') != pw):
             error = 'Only ascii characters allowed'
         else:
-            g.db.execute(
-                'insert into entries (name, password, points, K, n_games) values (?, ?, ?, ?, ?)',
-                [request.form['username'], request.form['pw'], 1500, 40, 0]
+            cur = g.db.cursor()
+            print((str(request.form['username']), str(request.form['pw']), '1500', '40', '0'))
+            cur.execute(
+                'insert into entries (name, password, points, K, n_games) values (%s, %s, %s, %s, %s)',
+                (str(request.form['username']), str(request.form['pw']), '1500', '40', '0')
             )
             g.db.commit()
+            cur.close()
             flash('New Player! Welcome {}!'.format(username))
             return redirect(url_for('main_page'))
     return render_template('newuser.html', error=error)
@@ -150,7 +160,8 @@ def watch_history():
     print('WATCH HISTORY')
     if not session.get('logged_in'):
         abort(401)
-    cur = g.db.execute('select * from results order by id desc')
+    cur = g.db.cursor()
+    cur.execute('select * from results order by id desc')
     entries = [
         dict(
             winner=row[1],
@@ -162,6 +173,7 @@ def watch_history():
             date_=row[7],
         ) for row in cur.fetchall()
     ]
+    cur.close()
 
     return render_template('watch_history.html', entries=entries)
 
