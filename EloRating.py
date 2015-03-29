@@ -126,6 +126,8 @@ def newuser():
         pw_again = request.form['pw_again']
         if pw != pw_again:
             error = 'Passwords must match!'
+        elif (username.encode('ascii', 'ignore') != username) or (pw.encode('ascii', 'ignore') != pw):
+            error = 'Only ascii characters allowed'
         else:
             g.db.execute(
                 'insert into entries (name, password, points, K, n_games) values (?, ?, ?, ?, ?)',
