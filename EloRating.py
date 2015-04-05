@@ -58,7 +58,7 @@ def teardown_request(exception):
 def main_page():
     cur = g.db.cursor()
     cur.execute('select name, points from entries order by points desc')
-    entries = [dict(name=row[0], points=row[1]) for row in cur.fetchall()]
+    entries = [dict(name=row[0], points=int(round(row[1]))) for row in cur.fetchall()]
     cur.close()
     return render_template('main_page.html', entries=entries)
 
@@ -76,7 +76,10 @@ def add_score():
         loser_res = int(loser_res_str)
         winner_res = int(winner_res_str)
         if not winner_res > loser_res:
-            flash('Incorrect entry!')
+            flash('Incorrect entry! winner_res <= loser_res')
+            return redirect(url_for('main_page'))
+        if winner == loser:
+            flash('Incorrect entry! winner==loser')
             return redirect(url_for('main_page'))
 
         cur = g.db.cursor()
@@ -118,6 +121,17 @@ def add_score():
             'insert into results (winner, loser, winner_points_before, loser_points_before, winner_res, loser_res, date_) values (%s, %s, %s, %s, %s, %s, %s)',
             (winner, loser, winner_points_before, loser_points_before, winner_res, loser_res, datetime.now().date())
         )
+
+        flash('Winner ({}): {} -> {}'.format(
+            winner,
+            int(round(winner_points_before)),
+            int(round(new_winner_rating)),
+        ))
+        flash('Lose ({}): {} -> {}'.format(
+            loser,
+            int(round(loser_points_before)),
+            int(round(new_loser_rating)),
+        ))
 
         g.db.commit()
         cur.close()

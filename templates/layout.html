@@ -8,6 +8,7 @@
     <a href="{{ url_for('login') }}">log in</a>
     <a href="{{ url_for('newuser') }}">New Player</a>
   {% else %}
+    <b>( {{ session.username }} )</b>
     <a href="{{ url_for('main_page')}}">Add result</a>
     <a href="{{ url_for('watch_history')}}">Watch history</a>
     <a href="{{ url_for('logout') }}">log out</a>
