@@ -22,13 +22,21 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 
 def connect_db():
-#    return sqlite3.connect(app.config['DATABASE'])
-    return MySQLdb.connect(
-        host='mysql.server',
-        user='foosballladder',
-        passwd='dendi',
-        db='foosballladder$default'
-    )
+    LOCAL = False   # TODO Automate
+    if LOCAL:
+        return MySQLdb.connect(
+            host='localhost',
+            user='root',
+            passwd='fibo112358',
+            db='foosballladder'
+        )
+    else:
+        return MySQLdb.connect(
+            host='mysql.server',
+            user='foosballladder',
+            passwd='dendi',
+            db='foosballladder$default'
+        )
 
 def init_db():  # TODO Is this right for online? probably not...
     with closing(connect_db()) as db:
