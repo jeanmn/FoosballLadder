@@ -8,7 +8,7 @@ from operator import itemgetter
 from datetime import datetime
 import os
 
-from math_ import update_rating
+from math_ import update_rating, expected_score, boX_expected_score
 
 # configuration
 DATABASE = os.path.join(os.path.expanduser('~'), 'FoosballLadder/db/Ladder.db')
@@ -54,13 +54,40 @@ def teardown_request(exception):
     if db is not None:
         db.close()
 
+def update_with_ES(D):
+    username = session.get('username')
+    cur = g.db.cursor()
+    cur.execute('select points from entries where name="{}"'.format(username))
+    (user_points,) = cur.fetchone()
+
+    if user_points != D['points']:
+        ES = expected_score(user_points, D['points'])
+        res = round(boX_expected_score(ES, X=15), 2)
+        if ES > 0.5:
+            D['ES'] = '(Expected Win: 8 - {})'.format(res)
+        else:
+            D['ES'] = '(Expected Loss: {} - 8)'.format(res)
+
+    return D
+
 @app.route('/')
 def main_page():
     cur = g.db.cursor()
     cur.execute('select name, points from entries order by points desc')
-    entries = [dict(name=row[0], points=int(round(row[1]))) for row in cur.fetchall()]
+    entries_ = [dict(
+        name=row[0],
+        points=row[1],
+    ) for row in cur.fetchall()]
+    if session.get('logged_in'):
+        entries = map(
+            update_with_ES,
+            entries_
+        )
+    else:
+        entries = entries_
+
     cur.close()
-    return render_template('main_page.html', entries=entries)
+    return render_template('show_entries.html', entries=entries, intround=lambda x: int(round(x)))
 
 
 
@@ -93,7 +120,6 @@ def add_score():
             'select points, K, n_games from entries where name="{}"'.format(winner)
         )
         (winner_points_before, winner_K, winner_n_games), = cur.fetchall()
-        print('tjoho')
 
         new_winner_rating, new_loser_rating = update_rating(
             winner_points_before, loser_points_before,
@@ -127,7 +153,7 @@ def add_score():
             int(round(winner_points_before)),
             int(round(new_winner_rating)),
         ))
-        flash('Lose ({}): {} -> {}'.format(
+        flash('Loser ({}): {} -> {}'.format(
             loser,
             int(round(loser_points_before)),
             int(round(new_loser_rating)),
@@ -139,6 +165,7 @@ def add_score():
     except Exception as e:
         flash('Undhandled error: {}'.format(e))
     return redirect(url_for('main_page'))
+   # return render_template('show_entries.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -188,6 +215,9 @@ def newuser():
                 g.db.commit()
                 cur.close()
                 flash('New Player! Welcome {}!'.format(username))
+                session['logged_in'] = True
+                session['username'] = username
+                flash('You were logged in as {}'.format(username))
                 return redirect(url_for('main_page'))
         return render_template('newuser.html', error=error)
     except Exception as e:
