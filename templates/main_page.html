@@ -6,7 +6,7 @@
         <dl>
           <dt>Winner:
           <dd><input type=text size=30 name=winner>
-          <dt>Your goals (loser):
+          <dt>Your goals:
           <dd><input type=text size=30 name=loser_res>
           <dt>Winner goals:
           <dd><input type=text size=30 name=winner_res>
@@ -15,11 +15,5 @@
       </form>
     </div>
   {% endif %}
-  <ul class=entries>
-  {% for entry in entries %}
-    <li><h2>{{ entry.name }}</h2>{{ entry.points|safe }}
-  {% else %}
-    <li><em>Main page.  No entries here so far</em>
-  {% endfor %}
-  </ul>
+  {% block entries %}{% endblock %}
 {% endblock %}

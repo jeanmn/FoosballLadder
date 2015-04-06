@@ -9,6 +9,15 @@ def expected_score(me, other):
     return expected_score_
 
 
+def boX_expected_score(expected_score, X=15):
+    winning_no = (X + 1) / 2
+    if expected_score > 0.5:
+        res = 8 * (1 - expected_score) / expected_score
+    else:
+        res = 8 * expected_score / (1 - expected_score)
+    return res
+
+
 def update_rating(rating1, rating2, K1, K2, score1, score2):
     n_rounds = score1 + score2
     expected_score1 = expected_score(rating1, rating2)
