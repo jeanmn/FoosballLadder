@@ -249,15 +249,18 @@ def plot_stuff():
     from matplotlib import pyplot as plt
     import StringIO
     cur = g.db.cursor()
-    cur.execute('select winner, loser, winner_points_after, loser_points_after from results where (winner="{}" or loser="{}")'.format(
+    cur.execute('select winner, loser, winner_points_after, loser_points_after, winner_points_before, loser_points_before, date_ from results where (winner="{}" or loser="{}")'.format(
         session['username'], session['username']    
     ))
     entries = [
         dict(
-            winner=row[1],
-            loser=row[2],
-            winner_points_after=row[3],
-            loser_points_after=row[2],
+            winner=row[0],
+            loser=row[1],
+            winner_points_after=row[2],
+            loser_points_after=row[3],
+            winner_points_before=row[4],
+            loser_points_before=row[5],
+            date_=row[6],
         ) for row in cur.fetchall()
     ]
     filtered_entries = filter(
@@ -265,15 +268,32 @@ def plot_stuff():
         entries
     )  # TODO Fix this with the SQL statement instead
     temp = [entry['winner'] for entry in filtered_entries]
+    def take_point(entry):
+        if entry['winner'] == session['username']:
+            if entry['winner_points_after'] != None:
+                point = entry['winner_points_after']
+            else:
+                point = entry['winner_points_before']
+        else:
+            if entry['loser_points_after'] != None:
+                point = entry['loser_points_after']
+            else:
+                point = entry['loser_points_before']
+        print(entry.keys())
+        date = entry['date_']
+        return point, date
+
     print(filtered_entries)
-    print('jkasdj')
     print(temp)
-    y = [entry['winner_points_after'] if entry['winner']==session['username'] else entry['loser_points_after'] for entry in filtered_entries]
-    plt.plot(y)
+    points, dates = zip(*map(take_point, filtered_entries))
+
+    plt.clf()
+    plt.plot(dates, points, marker='*')
     figure = plt.gcf()
+    figure.set_size_inches(6, 4)
     canvas = FigureCanvas(figure)
     output = StringIO.StringIO()
-    canvas.print_png(output)
+    canvas.print_png(output, dpi=100)
     response = make_response(output.getvalue())
     response.mimetype = 'image/png'
     return response
