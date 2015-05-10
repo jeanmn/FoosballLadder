@@ -25,7 +25,7 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 
 def connect_db():
-    LOCAL = True   # TODO Automate
+    LOCAL = False   # TODO Automate
     if LOCAL:
         return MySQLdb.connect(
             host='localhost',
