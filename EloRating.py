@@ -2,13 +2,16 @@
 import sqlite3
 import MySQLdb
 from flask import Flask, request, session, g, redirect, url_for, \
-             abort, render_template, flash
+             abort, render_template, flash, make_response
 from contextlib import closing
 from operator import itemgetter
 from datetime import datetime
 import os
 
 from math_ import update_rating, expected_score, boX_expected_score
+
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 # configuration
 DATABASE = os.path.join(os.path.expanduser('~'), 'FoosballLadder/db/Ladder.db')
@@ -144,8 +147,13 @@ def add_score():
             (loser_n_games + 1,)
         )
         cur.execute(
-            'insert into results (winner, loser, winner_points_before, loser_points_before, winner_res, loser_res, date_) values (%s, %s, %s, %s, %s, %s, %s)',
-            (winner, loser, winner_points_before, loser_points_before, winner_res, loser_res, datetime.now().date())
+            'insert into results (winner, loser, winner_points_before, loser_points_before, winner_points_after, loser_points_after, winner_res, loser_res, date_) values (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
+            (
+                winner, loser,
+                winner_points_before, loser_points_before,
+                new_winner_rating, new_loser_rating,
+                winner_res, loser_res,
+                datetime.now().date())
         )
 
         flash('Winner ({}): {} -> {}'.format(
@@ -224,6 +232,72 @@ def newuser():
         flash('Unhandled error', e)
         return redirect(url_for('main_page'))
 
+@app.route('/watch_plot')
+def watch_plot():
+    try:
+        print('WATCH PLOT')
+        if not session.get('logged_in'):
+            abort(401)
+
+        return render_template('watch_plot.html')
+    except Exception as e:
+        flash('Unhandled error', e)
+        return redirect(url_for('main_page'))
+
+@app.route('/plot.png')
+def plot_stuff():
+    from matplotlib import pyplot as plt
+    import StringIO
+    cur = g.db.cursor()
+    cur.execute('select winner, loser, winner_points_after, loser_points_after, winner_points_before, loser_points_before, date_ from results where (winner="{}" or loser="{}")'.format(
+        session['username'], session['username']    
+    ))
+    entries = [
+        dict(
+            winner=row[0],
+            loser=row[1],
+            winner_points_after=row[2],
+            loser_points_after=row[3],
+            winner_points_before=row[4],
+            loser_points_before=row[5],
+            date_=row[6],
+        ) for row in cur.fetchall()
+    ]
+    filtered_entries = filter(
+        lambda entry: entry['winner_points_after'] != None,
+        entries
+    )  # TODO Fix this with the SQL statement instead
+    temp = [entry['winner'] for entry in filtered_entries]
+    def take_point(entry):
+        if entry['winner'] == session['username']:
+            if entry['winner_points_after'] != None:
+                point = entry['winner_points_after']
+            else:
+                point = entry['winner_points_before']
+        else:
+            if entry['loser_points_after'] != None:
+                point = entry['loser_points_after']
+            else:
+                point = entry['loser_points_before']
+        print(entry.keys())
+        date = entry['date_']
+        return point, date
+
+    print(filtered_entries)
+    print(temp)
+    points, dates = zip(*map(take_point, filtered_entries))
+
+    plt.clf()
+    plt.plot(dates, points, marker='*')
+    figure = plt.gcf()
+    figure.set_size_inches(6, 4)
+    canvas = FigureCanvas(figure)
+    output = StringIO.StringIO()
+    canvas.print_png(output, dpi=100)
+    response = make_response(output.getvalue())
+    response.mimetype = 'image/png'
+    return response
+
 @app.route('/watch_history')
 def watch_history():
     try:
@@ -241,8 +315,10 @@ def watch_history():
                 winner_res=row[5],
                 loser_res=row[6],
                 date_=row[7],
+                winner_change=(row[8] - row[3]) if row[8] else 'N/A',
+                loser_change=(row[9] - row[4]) if row[9] else 'N/A',
             ) for row in cur.fetchall()
-        ]
+        ]  # TODO This can be smoothened up quite a bit
         cur.close()
 
         return render_template('watch_history.html', entries=entries)

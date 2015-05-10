@@ -11,6 +11,7 @@
     <b>( {{ session.username }} )</b>
     <a href="{{ url_for('main_page')}}">Add result</a>
     <a href="{{ url_for('watch_history')}}">Watch history</a>
+    <a href="{{ url_for('watch_plot')}}">Watch plot</a>
     <a href="{{ url_for('logout') }}">log out</a>
   {% endif %}
   </div>
@@ -18,5 +19,4 @@
     <div class=flash>{{ message }}</div>
   {% endfor %}
   {% block body %}{% endblock %}
-  <div> Heyo! </div>
 </div>

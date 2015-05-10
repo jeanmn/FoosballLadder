@@ -14,6 +14,8 @@ create table results (
       loser varchar(255) not null,
       winner_points_before float not null,
       loser_points_before float not null,
+      winner_points_after float not null,
+      loser_points_after float not null,
       winner_res integer not null,
       loser_res integer not null,
       date_ date not null
