@@ -263,13 +263,8 @@ def plot_stuff():
             date_=row[6],
         ) for row in cur.fetchall()
     ]
-    filtered_entries = filter(
-        lambda entry: entry['winner_points_after'] != None,
-        entries
-    )  # TODO Fix this with the SQL statement instead
-    temp = [entry['winner'] for entry in filtered_entries]
     def take_point(entry):
-        if entry['winner'] == session['username']:
+        if entry['winner'].lower() == session['username'].lower():
             if entry['winner_points_after'] != None:
                 point = entry['winner_points_after']
             else:
@@ -283,9 +278,12 @@ def plot_stuff():
         date = entry['date_']
         return point, date
 
-    print(filtered_entries)
-    print(temp)
-    points, dates = zip(*map(take_point, filtered_entries))
+    if len(entries):
+        points, dates = zip(*map(take_point, entries))
+    else:
+        flash('No data for plotting')
+        points=[]
+        dates=[]
 
     plt.clf()
     plt.plot(dates, points, marker='*')
